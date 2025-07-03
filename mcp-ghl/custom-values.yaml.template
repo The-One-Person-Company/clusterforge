@@ -1,0 +1,37 @@
+# custom-values.yaml.template
+
+replicaCount: ${MCP_GHL_REPLICA_COUNT:-2}
+
+image:
+  repository: ${MCP_GHL_IMAGE_REPO}
+  tag: ${MCP_GHL_IMAGE_TAG:-latest}
+  pullPolicy: Always
+
+env:
+  GHL_API_KEY: "${GHL_API_KEY}"
+  GHL_LOCATION_ID: "${GHL_LOCATION_ID}"
+  GHL_BASE_URL: "${GHL_BASE_URL:-https://services.leadconnectorhq.com}"
+  NODE_ENV: "${NODE_ENV:-production}"
+  PORT: "${MCP_GHL_PORT:-8000}"
+  LOG_LEVEL: "${MCP_GHL_LOG_LEVEL:-info}"
+  CORS_ORIGINS: "${MCP_GHL_CORS_ORIGINS:-*}"
+
+autoscaling:
+  enabled: ${MCP_GHL_AUTOSCALING_ENABLED:-true}
+  minReplicas: ${MCP_GHL_MIN_REPLICAS:-2}
+  maxReplicas: ${MCP_GHL_MAX_REPLICAS:-5}
+  targetCPUUtilizationPercentage: ${MCP_GHL_TARGET_CPU_UTILIZATION:-60}
+
+service:
+  type: ${MCP_GHL_SERVICE_TYPE:-LoadBalancer}
+  port: ${MCP_GHL_SERVICE_PORT:-80}
+  targetPort: ${MCP_GHL_SERVICE_TARGET_PORT:-8000}
+  annotations: {}
+
+resources:
+  limits:
+    cpu: ${MCP_GHL_CPU_LIMIT:-2000m}
+    memory: ${MCP_GHL_MEMORY_LIMIT:-1Gi}
+  requests:
+    cpu: ${MCP_GHL_CPU_REQUEST:-500m}
+    memory: ${MCP_GHL_MEMORY_REQUEST:-512Mi} 

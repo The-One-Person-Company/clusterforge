@@ -1,0 +1,40 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ntfy-ingress
+  namespace: ntfy
+  annotations:
+    kubernetes.io/ingress.class: "public"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+    nginx.ingress.kubernetes.io/proxy-set-headers: "true"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "3m"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3m"
+    nginx.ingress.kubernetes.io/proxy-body-size: "0"
+    nginx.ingress.kubernetes.io/ssl-session-timeout: "1d"
+    nginx.ingress.kubernetes.io/ssl-session-cache: "shared:MozSSL:10m"
+    nginx.ingress.kubernetes.io/ssl-session-tickets: "off"
+    nginx.ingress.kubernetes.io/ssl-protocols: "TLSv1.2 TLSv1.3"
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      proxy_set_header Host $http_host;
+      proxy_set_header Upgrade $http_upgrade;
+      proxy_set_header Connection "upgrade";
+      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+spec:
+  tls:
+    - hosts:
+        - ${NTFY_DOMAIN}
+      secretName: ntfy-certificate
+  rules:
+    - host: ${NTFY_DOMAIN}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: ntfy-service
+                port:
+                  number: 80 

@@ -1,0 +1,63 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-datasources
+  namespace: monitoring
+  labels:
+    app: grafana
+    managed-by: script
+    environment: production
+data:
+  prometheus.yaml: |-
+    {
+      "apiVersion": 1,
+      "datasources": [
+        {
+          "name": "Prometheus",
+          "type": "prometheus",
+          "url": "http://prometheus-svc.monitoring.svc.cluster.local:9090",
+          "access": "proxy",
+          "isDefault": true
+        },
+        {
+          "name": "Loki",
+          "type": "loki",
+          "url": "http://loki-stack.monitoring.svc.cluster.local:3100",
+          "access": "proxy"
+        },
+        {
+          "name": "Redis",
+          "type": "redis-datasource",
+          "url": "redis://redis.database.svc.cluster.local:6379",
+          "access": "proxy",
+          "jsonData": {
+            "poolSize": 5,
+            "timeout": 10,
+            "tlsAuth": false,
+            "tlsAuthWithCACert": false
+          },
+          "secureJsonData": {
+            "password": "${REDIS_PASSWORD}"
+          }
+        },
+        {
+          "name": "PostgreSQL",
+          "type": "postgres",
+          "url": "postgres.database.svc.cluster.local:5432",
+          "user": "${POSTGRES_ROOT_USER}",
+          "database": "n8n",
+          "jsonData": {
+            "sslmode": "disable",
+            "maxOpenConns": 100,
+            "maxIdleConns": 100,
+            "maxIdleConnsAuto": true,
+            "connMaxLifetime": 14400,
+            "postgresVersion": 1500,
+            "timescaledb": false
+          },
+          "secureJsonData": {
+            "password": "${POSTGRES_ROOT_PASSWORD}"
+          }
+        }
+      ]
+    } 

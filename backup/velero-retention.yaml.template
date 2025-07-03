@@ -1,0 +1,21 @@
+apiVersion: velero.io/v1
+kind: BackupStorageLocation
+metadata:
+  name: default
+  namespace: velero
+  labels:
+    app: velero
+    managed-by: script
+    environment: production
+spec:
+  provider: aws
+  objectStorage:
+    bucket: ${MINIO_BUCKET}
+  config:
+    region: ${MINIO_REGION}
+    s3ForcePathStyle: "true"
+    s3Url: https://${MINIO_DOMAIN}
+  default: true
+  accessMode: ReadWrite
+  validationFrequency: 1h
+  backupSyncPeriod: 1h 

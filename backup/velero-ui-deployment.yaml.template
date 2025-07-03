@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: velero-ui
+  namespace: velero
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: velero-ui
+  template:
+    metadata:
+      labels:
+        app: velero-ui
+    spec:
+      containers:
+        - name: velero-ui
+          image: ghcr.io/seriohub/vui:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: VELERO_NAMESPACE
+              value: "velero"
+            - name: VUI_BASE_URL
+              value: "https://bkp.theoneperson.company"
+            - name: VUI_CLUSTER_NAME
+              value: "theoneperson-company-ks1"
+            - name: VUI_ADMIN_USERNAME
+              value: "${TRAEFIK_USERNAME}"
+            - name: VUI_ADMIN_PASSWORD
+              value: "${TRAEFIK_PASSWORD}"
+            # Add more VUI environment variables here as needed (see VUI docs)
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: velero-ui
+  namespace: velero
+spec:
+  selector:
+    app: velero-ui
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
+  type: ClusterIP

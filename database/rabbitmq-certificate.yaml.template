@@ -1,0 +1,67 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: rabbitmq-tls
+  namespace: database            # keep it in the same ns as the Ingress/Service
+spec:
+  # ---------------------------------------------------------------------------
+  # Where cert-manager stores the issued cert + key
+  # ---------------------------------------------------------------------------
+  secretName: rabbitmq-tls       # <- reference this in your Ingress .spec.tls[]
+  # ---------------------------------------------------------------------------
+  # Requested lifetime and renewal window
+  # (Let’s Encrypt caps duration at 90 days anyway, but it’s good to be explicit)
+  # ---------------------------------------------------------------------------
+  duration: 2160h                # 90 days
+  renewBefore: 360h              # start renewal 15 days before expiry
+  # ---------------------------------------------------------------------------
+  # Private-key options
+  # ---------------------------------------------------------------------------
+  privateKey:
+    algorithm: ECDSA             # RSA | ECDSA | Ed25519
+    size: 256                    # P-256 curve (ignored for Ed25519)
+    encoding: PKCS8              # PKCS1 | PKCS8
+    rotationPolicy: Always       # Always | Never  (Always = regenerate on renew)
+  # ---------------------------------------------------------------------------
+  # X.509 subject / organisation metadata
+  # Most public CAs only honour C, O, OU, L, ST
+  # ---------------------------------------------------------------------------
+  subject:
+    organizations:
+      - "The One Person Company"
+    organizationalUnits:
+      - "IT"
+    countries:
+      - "US"                     # two-letter ISO 3166-1
+  # ---------------------------------------------------------------------------
+  # KeyUsage / ExtKeyUsage bits (what the cert is allowed to do)
+  # ---------------------------------------------------------------------------
+  usages:
+    - digital signature
+    - key encipherment
+    - server auth
+    # - client auth            # add if you plan to do mTLS for AMQPS
+  # ---------------------------------------------------------------------------
+  # The CA you want to sign the CSR
+  # ---------------------------------------------------------------------------
+  issuerRef:
+    kind: ClusterIssuer
+    name: letsencrypt-prod
+  # ---------------------------------------------------------------------------
+  # SANs – every entry *must* be publicly resolvable for Let’s Encrypt HTTP-01/ALPN
+  # ---------------------------------------------------------------------------
+  commonName: "${RMQ_SUBDOMAIN}.${DOMAIN_BASE}"
+  dnsNames:
+    - "${RMQ_SUBDOMAIN}.${DOMAIN_BASE}"
+
+  # ---------------------------------------------------------------------------
+  #  If you ever need a self-signed / private-CA cert for internal names,
+  #  cert-manager supports that too, e.g. with an Issuer pointing to HashiCorp
+  #  Vault or a Kubernetes CA keypair, and you can add:
+  #
+  #    ipAddresses:
+  #      - "10.42.0.15"
+  #
+  #  Just remember: public CAs (Let’s Encrypt, ZeroSSL, etc.) will *not* sign
+  #  certificates that contain private IP SANs or non-public DNS names.
+  # ---------------------------------------------------------------------------

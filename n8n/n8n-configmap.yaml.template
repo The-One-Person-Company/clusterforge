@@ -1,0 +1,61 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: n8n-config
+  labels:
+    app: n8n
+    managed-by: script
+    environment: production
+data:
+  # Core N8N Configuration
+  NODE_ENV: "production"
+  GENERIC_TIMEZONE: "Asia/Taipei"
+  N8N_PERSONALIZATION_ENABLED: "true"
+  N8N_HIRING_BANNER_ENABLED: "false"
+  N8N_PUBLIC_API_SWAGGERUI_DISABLED: "true"
+  N8N_HIDE_USAGE_PAGE: "false"
+  N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS: "false"
+ #NODE_FUNCTION_ALLOW_EXTERNAL: "${NODE_FUNCTION_ALLOW_EXTERNAL}"
+
+  # URL and Access Configuration
+  N8N_PROTOCOL: "http"
+  N8N_HOST: "${N8N_DOMAIN}"
+  N8N_PORT: "5678"
+  N8N_EDITOR_BASE_URL: "https://${N8N_DOMAIN}/"
+  WEBHOOK_URL: "https://${N8N_DOMAIN}/"
+  WEBHOOK_TUNNEL_URL: "https://${N8N_DOMAIN}/"
+
+  # Proxy Configuration
+  N8N_TRUSTED_PROXY_HOPS: "1"
+  N8N_TRUST_PROXY_CONFIG: "true"
+  N8N_FORWARD_HEADERS_ENABLED: "true"
+
+  # Session and Security
+ # N8N_SESSION_COOKIE_SECURE: "true"
+  #N8N_SESSION_COOKIE_SAME_SITE: "Lax"
+  #N8N_SESSION_COOKIE_DOMAIN: ${N8N_DOMAIN}
+
+  # Database Configuration
+  DB_TYPE: postgresdb
+  DB_POSTGRESDB_DATABASE: ${POSTGRES_DB}
+  DB_POSTGRESDB_HOST: postgres.database.svc.cluster.local
+  DB_POSTGRESDB_PORT: "5432"
+  DB_POSTGRESDB_USER: ${POSTGRES_NON_ROOT_USER}
+  DB_POSTGRESDB_PASSWORD: ${POSTGRES_NON_ROOT_PASSWORD}
+
+  # Queue and Redis Configuration
+  EXECUTIONS_MODE: queue
+  QUEUE_BULL_REDIS_HOST: "redis.database.svc.cluster.local"
+  QUEUE_BULL_REDIS_PORT: "6379"
+  QUEUE_HEALTH_CHECK_ACTIVE: "true"
+  N8N_RUNNERS_ENABLED: "true"
+  OFFLOAD_MANUAL_EXECUTIONS_TO_WORKERS: "true"
+
+  # Execution Data Management
+  EXECUTIONS_DATA_SAVE_ON_ERROR: "all"
+  EXECUTIONS_DATA_SAVE_ON_SUCCESS: "none"
+  EXECUTIONS_DATA_SAVE_ON_PROGRESS: "true"
+  EXECUTIONS_DATA_SAVE_MANUAL_EXECUTIONS: "false"
+  EXECUTIONS_DATA_PRUNE: "true"
+  EXECUTIONS_DATA_MAX_AGE: "168"
+  EXECUTIONS_DATA_PRUNE_MAX_COUNT: "50000"

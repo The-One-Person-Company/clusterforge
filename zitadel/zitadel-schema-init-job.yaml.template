@@ -1,0 +1,64 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: zitadel-schema-init
+  namespace: zitadel
+  labels:
+    app: zitadel
+    managed-by: script
+    environment: production
+spec:
+  template:
+    spec:
+      containers:
+      - name: schema-init
+        image: ghcr.io/zitadel/zitadel:latest
+        command: ["/bin/sh", "-c"]
+        args:
+        - |
+          /zitadel setup \
+            --masterkeyFromEnv \
+            --skipInstanceCreation \
+            --skipFirstInstance \
+            --skipStartup \
+            --skipDatabaseInit=false
+        env:
+        - name: ZITADEL_DATABASE_POSTGRES_HOST
+          value: ${POSTGRES_HOST}
+        - name: ZITADEL_DATABASE_PORT
+          value: "5432"
+        - name: ZITADEL_DATABASE_POSTGRES_DATABASE
+          value: ${ZITADEL_DB_NAME}
+        - name: ZITADEL_DATABASE_POSTGRES_USER_USERNAME
+          value: ${ZITADEL_POSTGRES_USER}
+        - name: ZITADEL_DATABASE_POSTGRES_USER_PASSWORD
+          value: ${ZITADEL_POSTGRES_PASSWORD}
+        - name: ZITADEL_DATABASE_POSTGRES_ADMIN_USERNAME
+          value: ${POSTGRES_USER}
+        - name: ZITADEL_DATABASE_POSTGRES_ADMIN_PASSWORD
+          value: ${POSTGRES_PASSWORD}
+        - name: ZITADEL_DATABASE_SSL
+          value: "false"
+        - name: ZITADEL_MASTERKEY
+          valueFrom:
+            secretKeyRef:
+              name: zitadel-secret
+              key: masterkey
+              optional: false
+        - name: ZITADEL_DATABASE_POSTGRES_USER_SSL_MODE
+          value: "disable"
+        - name: ZITADEL_DATABASE_POSTGRES_ADMIN_SSL_MODE
+          value: "disable"
+        - name: ZITADEL_DATABASE_POSTGRES_USER_MAX_OPEN_CONNS
+          value: "25"
+        - name: ZITADEL_DATABASE_POSTGRES_USER_MAX_CONN_LIFETIME
+          value: "1h"
+        - name: ZITADEL_DATABASE_POSTGRES_USER_MAX_CONN_IDLE_TIME
+          value: "5m"
+        - name: ZITADEL_DATABASE_POSTGRES_ADMIN_MAX_OPEN_CONNS
+          value: "25"
+        - name: ZITADEL_DATABASE_POSTGRES_ADMIN_MAX_CONN_LIFETIME
+          value: "1h"
+        - name: ZITADEL_DATABASE_POSTGRES_ADMIN_MAX_CONN_IDLE_TIME
+          value: "5m"
+      restartPolicy: OnFailure 

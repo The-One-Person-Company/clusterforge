@@ -1,0 +1,53 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-exporter-user-creation-script
+  namespace: database
+data:
+  create_user.sql: |
+    DO
+    $do$
+    BEGIN
+      IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'postgres-exporter') THEN
+        CREATE USER "postgres-exporter" WITH PASSWORD '${POSTGRES_EXPORTER_PASSWORD}';
+      END IF;
+    END
+    $do$;
+    GRANT pg_monitor TO "postgres-exporter";
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: postgres-exporter-user-creation
+  namespace: database
+spec:
+  template:
+    spec:
+      containers:
+      - name: psql
+        image: postgres:11
+        command:
+          - "bin/sh"
+          - "-c"
+          - |
+            export PGPASSWORD=$POSTGRES_PASSWORD
+            psql -h postgres -U $POSTGRES_USER -d n8n -f /scripts/create_user.sql
+        env:
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: db-secret
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: db-secret
+              key: POSTGRES_PASSWORD
+        volumeMounts:
+        - name: script
+          mountPath: /scripts
+      volumes:
+      - name: script
+        configMap:
+          name: postgres-exporter-user-creation-script
+      restartPolicy: OnFailure 

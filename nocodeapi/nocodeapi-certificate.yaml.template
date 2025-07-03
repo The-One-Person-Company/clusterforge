@@ -1,0 +1,21 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: nca-api-certificate
+  namespace: nocodeapi
+  annotations:
+    cert-manager.io/certificate-persistence: "true"
+    cert-manager.io/certificate-pvc-name: "nca-api-certificate-pvc"
+spec:
+  secretName: nca-api-tls
+  duration: 2160h # 90 days
+  renewBefore: 360h # 15 days
+  subject:
+    organizations:
+      - "The One Person Company"
+  commonName: ${NOCODEAPI_DOMAIN}
+  dnsNames:
+    - ${NOCODEAPI_DOMAIN}
+  issuerRef:
+    name: letsencrypt-cloudflare
+    kind: ClusterIssuer 

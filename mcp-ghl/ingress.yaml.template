@@ -1,0 +1,27 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: mcp-ghl-ingress
+  namespace: ${MCP_GHL_NAMESPACE}
+  annotations:
+    cert-manager.io/cluster-issuer: ${MCP_GHL_ISSUER:-letsencrypt-cloudflare}
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+spec:
+  ingressClassName: public
+  tls:
+    - hosts:
+        - ${MCP_GHL_DOMAIN}
+      secretName: ${MCP_GHL_TLS_SECRET:-mcp-ghl-tls}
+  rules:
+    - host: ${MCP_GHL_DOMAIN}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: mcp-ghl
+                port:
+                  number: ${MCP_GHL_SERVICE_PORT:-80} 

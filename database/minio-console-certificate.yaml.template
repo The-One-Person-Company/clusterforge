@@ -1,0 +1,31 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: minio-console-tls
+  namespace: database
+spec:
+  secretName: minio-console-tls
+  duration: 2160h
+  renewBefore: 360h
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+    encoding: PKCS8
+    rotationPolicy: Always
+  subject:
+    organizations:
+      - "The One Person Company"
+    organizationalUnits:
+      - "IT"
+    countries:
+      - "US"
+  usages:
+    - digital signature
+    - key encipherment
+    - server auth
+  issuerRef:
+    kind: ClusterIssuer
+    name: letsencrypt-prod
+  commonName: "${MINIO_CONSOLE_SUBDOMAIN}.${DOMAIN_BASE}"
+  dnsNames:
+    - "${MINIO_CONSOLE_SUBDOMAIN}.${DOMAIN_BASE}" 

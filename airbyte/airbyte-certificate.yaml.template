@@ -1,0 +1,21 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: airbyte-certificate
+  namespace: airbyte
+spec:
+  secretName: airbyte-tls
+  duration: 2160h # 90 days
+  renewBefore: 360h # 15 days
+  subject:
+    organizations:
+      - "The One Person Company"
+  commonName: ${AIRBYTE_DOMAIN}
+  dnsNames:
+    - ${AIRBYTE_DOMAIN}
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  usages:
+    - server auth
+    - client auth 

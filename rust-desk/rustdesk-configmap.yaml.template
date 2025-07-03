@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rustdesk-config
+  namespace: rustdesk
+  labels:
+    app: rustdesk
+    managed-by: script
+data:
+  ALWAYS_USE_RELAY: "${RUSTDESK_ALWAYS_USE_RELAY}" 

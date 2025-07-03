@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rustdesk-server
+  namespace: rustdesk
+  labels:
+    app: rustdesk-server
+    managed-by: script
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rustdesk-server
+  template:
+    metadata:
+      labels:
+        app: rustdesk-server
+    spec:
+      containers:
+      - name: hbbs
+        image: rustdesk/rustdesk-server:latest
+        command: ["hbbs", "-k", "_"]
+        ports:
+        - containerPort: 21115
+          name: nat-test
+        - containerPort: 21116
+          name: main-tcp
+        - containerPort: 21116
+          name: main-udp
+          protocol: UDP
+        - containerPort: 21118
+          name: web-client
+        volumeMounts:
+        - name: data-volume
+          mountPath: /root
+        envFrom:
+        - configMapRef:
+            name: rustdesk-config
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+      - name: hbbr
+        image: rustdesk/rustdesk-server:latest
+        command: ["hbbr", "-k", "_"]
+        ports:
+        - containerPort: 21117
+          name: relay
+        - containerPort: 21119
+          name: web-relay
+        volumeMounts:
+        - name: data-volume
+          mountPath: /root
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+      volumes:
+      - name: data-volume
+        persistentVolumeClaim:
+          claimName: rustdesk-data-pvc
+      restartPolicy: Always 

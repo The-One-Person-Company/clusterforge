@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: harbor-postgres-init-script
+  namespace: harbor
+  labels:
+    app: harbor
+    managed-by: script
+    environment: production
+data:
+  init.sql: |
+    -- Create Harbor database
+    CREATE DATABASE ${HARBOR_DATABASE_NAME};
+    
+    -- Connect to the Harbor database
+    \c ${HARBOR_DATABASE_NAME};
+    
+    -- Create Harbor user
+    DO $$
+    BEGIN
+      IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '${HARBOR_DATABASE_USER}') THEN
+        CREATE USER ${HARBOR_DATABASE_USER} WITH PASSWORD '${HARBOR_DATABASE_PASSWORD}';
+      END IF;
+    END
+    $$;
+    
+    -- Grant all privileges on the Harbor database to the Harbor user
+    GRANT ALL PRIVILEGES ON DATABASE ${HARBOR_DATABASE_NAME} TO ${HARBOR_DATABASE_USER};
+    
+    -- Grant schema privileges
+    GRANT ALL ON SCHEMA public TO ${HARBOR_DATABASE_USER};
+    
+    -- Grant table privileges
+    GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO ${HARBOR_DATABASE_USER};
+    
+    -- Grant sequence privileges
+    GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO ${HARBOR_DATABASE_USER};
+    
+    -- Set default privileges for future objects
+    ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO ${HARBOR_DATABASE_USER};
+    ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO ${HARBOR_DATABASE_USER}; 

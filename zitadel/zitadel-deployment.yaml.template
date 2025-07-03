@@ -1,0 +1,185 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zitadel
+  namespace: zitadel
+  labels:
+    app: zitadel
+    managed-by: script
+    environment: production
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: zitadel
+  template:
+    metadata:
+      labels:
+        app: zitadel
+    spec:
+      containers:
+        - name: zitadel
+          image: ghcr.io/zitadel/zitadel:latest
+          imagePullPolicy: IfNotPresent
+          args: ["start-from-init", "--masterkeyFromEnv", "--skipDatabaseInit"]
+          env:
+            - name: ZITADEL_DATABASE_POSTGRES_HOST
+              value: "${POSTGRES_HOST}"
+            - name: ZITADEL_DATABASE_PORT
+              value: "5432"
+            - name: ZITADEL_DATABASE_POSTGRES_DATABASE
+              value: "${ZITADEL_DB_NAME}"
+            - name: ZITADEL_DATABASE_POSTGRES_USER_USERNAME
+              value: "${ZITADEL_POSTGRES_USER}"
+            - name: ZITADEL_DATABASE_POSTGRES_USER_PASSWORD
+              value: "${ZITADEL_POSTGRES_PASSWORD}"
+            - name: ZITADEL_DATABASE_POSTGRES_ADMIN_USERNAME
+              value: "${POSTGRES_USER}"
+            - name: ZITADEL_DATABASE_POSTGRES_ADMIN_PASSWORD
+              value: "${POSTGRES_PASSWORD}"             
+            - name: ZITADEL_DATABASE_SSL
+              value: "false"
+            - name: ZITADEL_MASTERKEY
+              valueFrom:
+                secretKeyRef:
+                  name: zitadel-secret
+                  key: masterkey
+                  optional: false
+            - name: ZITADEL_DEFAULT_INSTANCE_SETUP_DONE
+              value: "true"
+            - name: ZITADEL_EXTERNAL_DOMAIN
+              value: "${ZITADEL_DOMAIN}"
+            - name: ZITADEL_EXTERNAL_SECURE
+              value: "true"
+            - name: ZITADEL_DEFAULT_INSTANCE_SETUP_USERNAME
+              value: "${ZITADEL_ADMIN_USERNAME}"
+            - name: ZITADEL_DEFAULT_INSTANCE_SETUP_PASSWORD
+              value: "${ZITADEL_ADMIN_PASSWORD}"
+            - name: ZITADEL_DEFAULT_INSTANCE_SETUP_EMAIL
+              value: "${ZITADEL_ADMIN_EMAIL}"
+            - name: ZITADEL_DEFAULT_INSTANCE_SETUP_FIRSTNAME
+              value: "${ZITADEL_ADMIN_FIRSTNAME}"
+            - name: ZITADEL_DEFAULT_INSTANCE_SETUP_LASTNAME
+              value: "${ZITADEL_ADMIN_LASTNAME}"
+            - name: ZITADEL_DEFAULT_INSTANCE_SETUP_ORG_NAME
+              value: "${ZITADEL_ORG_NAME}"
+            - name: ZITADEL_DEFAULT_INSTANCE_SETUP_ORG_DOMAIN
+              value: "${ZITADEL_ORG_DOMAIN}"
+            - name: ZITADEL_DATABASE_POSTGRES_USER_SSL_MODE
+              value: "disable"
+            - name: ZITADEL_DATABASE_POSTGRES_ADMIN_SSL_MODE
+              value: "disable"             
+          ports:
+            - name: http
+              containerPort: 8080
+            - name: grpc
+              containerPort: 9090
+          volumeMounts:
+            - name: zitadel-storage
+              mountPath: /zitadel
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "500m"
+      volumes:
+        - name: zitadel-storage
+          persistentVolumeClaim:
+            claimName: zitadel-storage
+initJob:
+  # Once ZITADEL is installed, the initJob can be disabled.
+  enabled: true
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation
+    helm.sh/hook-weight: "1"
+  resources: {}
+  backoffLimit: 5
+  activeDeadlineSeconds: 300
+  initContainers: []
+  extraContainers: []
+  podAnnotations: {}
+  podAdditionalLabels: {}
+  # Available init commands :
+  # "": initialize ZITADEL instance (without skip anything)
+  # database: initialize only the database
+  # grant: set ALL grant to user
+  # user: initialize only the database user
+  # zitadel: initialize ZITADEL internals (skip "create user" and "create database")
+  command: ""
+
+setupJob:
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation
+    helm.sh/hook-weight: "2"
+  resources: {}
+  backoffLimit: 5
+  activeDeadlineSeconds: 300
+  initContainers: []
+  extraContainers: []
+  podAnnotations: {}
+  podAdditionalLabels: {}
+  additionalArgs:
+    - "--init-projections=true"
+  machinekeyWriter:
+    image:
+      repository: bitnami/kubectl
+      tag: ""
+    resources: {}
+
+readinessProbe:
+  enabled: true
+  initialDelaySeconds: 0
+  periodSeconds: 5
+  failureThreshold: 3
+
+livenessProbe:
+  enabled: true
+  initialDelaySeconds: 0
+  periodSeconds: 5
+  failureThreshold: 3
+
+startupProbe:
+  enabled: true
+  periodSeconds: 1
+  failureThreshold: 30
+
+metrics:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+    honorLabels: true
+    honorTimestamps: true
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: zitadel
+  labels:
+    app: zitadel
+spec:
+  selector:
+    app: zitadel
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+    - name: grpc
+      port: 9090
+      targetPort: grpc 

@@ -1,0 +1,15 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: rustdesk-certificate
+  namespace: rustdesk
+  labels:
+    app: rustdesk
+    managed-by: script
+spec:
+  secretName: rustdesk-tls
+  issuerRef:
+    name: cloudflare-issuer
+    kind: ClusterIssuer
+  dnsNames:
+    - ${RUSTDESK_SUBDOMAIN}.${DOMAIN_BASE} 

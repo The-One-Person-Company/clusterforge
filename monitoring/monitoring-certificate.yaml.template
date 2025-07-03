@@ -1,0 +1,22 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: monitoring-tls
+  namespace: monitoring
+  annotations:
+    cert-manager.io/certificate-persistence: "true"
+    cert-manager.io/certificate-pvc-name: "monitoring-certificate-pvc"
+spec:
+  secretName: monitoring-tls
+  duration: 2160h # 90 days
+  renewBefore: 360h # 15 days
+  subject:
+    organizations:
+      - "The One Person Company"
+  commonName: ${GRAFANA_DOMAIN}
+  dnsNames:
+    - ${GRAFANA_DOMAIN}
+    - ${PROMETHEUS_DOMAIN}
+  issuerRef:
+    name: letsencrypt-cloudflare
+    kind: ClusterIssuer

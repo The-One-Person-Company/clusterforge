@@ -1,0 +1,59 @@
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: daily-backup
+  namespace: velero
+  labels:
+    app: velero
+    managed-by: script
+    environment: production
+spec:
+  schedule: "0 1 * * *"  # Run at 1 AM daily
+  template:
+    includedNamespaces:
+    - "*"  # Backup all namespaces
+    ttl: 168h  # Keep daily backups for 7 days
+    storageLocation: ${MINIO_BUCKET}
+    volumeSnapshotLocations:
+    - default
+    hooks: {}  # No hooks needed for now
+---
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: weekly-backup
+  namespace: velero
+  labels:
+    app: velero
+    managed-by: script
+    environment: production
+spec:
+  schedule: "0 1 * * 0"  # Run at 1 AM every Sunday
+  template:
+    includedNamespaces:
+    - "*"  # Backup all namespaces
+    ttl: 1176h  # Keep weekly backups for 7 weeks (49 days)
+    storageLocation: ${MINIO_BUCKET}
+    volumeSnapshotLocations:
+    - default
+    hooks: {}  # No hooks needed for now
+---
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: monthly-backup
+  namespace: velero
+  labels:
+    app: velero
+    managed-by: script
+    environment: production
+spec:
+  schedule: "0 1 1 * *"  # Run at 1 AM on the 1st of every month
+  template:
+    includedNamespaces:
+    - "*"  # Backup all namespaces
+    ttl: 8760h  # Keep monthly backups for 12 months (365 days)
+    storageLocation: ${MINIO_BUCKET}
+    volumeSnapshotLocations:
+    - default
+    hooks: {}  # No hooks needed for now 

@@ -1,0 +1,63 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: postgres-init
+spec:
+  template:
+    metadata:
+      name: postgres-user-bootstrap
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: postgres-user-bootstrap
+          image: postgres:11
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              echo "Waiting for PostgreSQL to be ready..."
+              until pg_isready -h ${POSTGRES_HOST} -U "$ZITADEL_POSTGRES_USER"; do
+                echo "Waiting for DB..."
+                sleep 2
+              done
+
+              echo "Creating non-root user if it doesn't exist..."
+              psql -h ${POSTGRES_HOST} -U "$ZITADEL_POSTGRES_USER" -d "$ZITADEL_DB_NAME" <<-EOSQL
+                DO \$\$
+                BEGIN
+                  IF NOT EXISTS (
+                    SELECT FROM pg_catalog.pg_roles WHERE rolname = '$ZITADEL_POSTGRES_NON_ROOT_USER'
+                  ) THEN
+                    CREATE ROLE "$ZITADEL_POSTGRES_NON_ROOT_USER" LOGIN PASSWORD '$ZITADEL_POSTGRES_NON_ROOT_PASSWORD';
+                  END IF;
+                END
+                \$\$;
+
+                GRANT ALL PRIVILEGES ON DATABASE "$ZITADEL_DB_NAME" TO "$ZITADEL_POSTGRES_NON_ROOT_USER";
+              EOSQL
+          env:
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: zitadel-secret
+                  key: ZITADEL_POSTGRES_PASSWORD
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: zitadel-secret
+                  key: ZITADEL_POSTGRES_USER
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: zitadel-secret
+                  key: ZITADEL_DB_NAME
+            - name: POSTGRES_NON_ROOT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: zitadel-secret
+                  key: database-user
+            - name: POSTGRES_NON_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: zitadel-secret
+                  key:  database-password
+      activeDeadlineSeconds: 120

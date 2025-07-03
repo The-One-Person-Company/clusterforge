@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcp-ghl
+  namespace: ${MCP_GHL_NAMESPACE}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mcp-ghl
+  template:
+    metadata:
+      labels:
+        app: mcp-ghl
+    spec:
+      containers:
+        - name: mcp-ghl
+          image: local/mcp-ghl:${MCP_GHL_IMAGE_TAG}
+          ports:
+            - containerPort: 8000

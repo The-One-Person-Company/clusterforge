@@ -1,0 +1,13 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: ${MCP_GHL_TLS_SECRET:-mcp-ghl-tls}
+  namespace: ${MCP_GHL_NAMESPACE}
+spec:
+  secretName: ${MCP_GHL_TLS_SECRET:-mcp-ghl-tls}
+  issuerRef:
+    name: ${MCP_GHL_ISSUER:-letsencrypt-cloudflare}
+    kind: ClusterIssuer
+  commonName: ${MCP_GHL_DOMAIN}
+  dnsNames:
+    - ${MCP_GHL_DOMAIN} 

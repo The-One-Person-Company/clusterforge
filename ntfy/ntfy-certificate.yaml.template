@@ -1,0 +1,21 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: ntfy-certificate
+  namespace: ntfy
+spec:
+  secretName: ntfy-certificate
+  duration: 2160h # 90 days
+  renewBefore: 360h # 15 days
+  subject:
+    organizations:
+      - "The One Person Company"
+  commonName: ${NTFY_DOMAIN}
+  dnsNames:
+    - ${NTFY_DOMAIN}
+  issuerRef:
+    name: letsencrypt-cloudflare
+    kind: ClusterIssuer
+  usages:
+    - server auth
+    - client auth 

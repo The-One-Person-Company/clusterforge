@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: rustdesk
+  labels:
+    name: rustdesk
+    managed-by: script 

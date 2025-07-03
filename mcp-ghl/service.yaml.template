@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mcp-ghl
+  namespace: ${MCP_GHL_NAMESPACE}
+  labels:
+    app: mcp-ghl
+spec:
+  type: ${MCP_GHL_SERVICE_TYPE:-LoadBalancer}
+  ports:
+    - port: ${MCP_GHL_SERVICE_PORT:-80}
+      targetPort: ${MCP_GHL_SERVICE_TARGET_PORT:-8000}
+      protocol: TCP
+      name: http
+  selector:
+    app: mcp-ghl 

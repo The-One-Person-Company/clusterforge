@@ -1,0 +1,94 @@
+replicaCount: 3
+
+# Configure the masterkey
+zitadel:
+  masterkey: ${ZITADEL_MASTER_KEY}
+
+image:
+  repository: ghcr.io/zitadel/zitadel
+  tag: v3.3.0
+
+skipDatabaseInit: false
+
+config:
+  Database:
+    Postgres:
+      Host: ${POSTGRES_HOST}
+      Port: 5432
+      Database: ${ZITADEL_DB_NAME}
+      User:
+        Username: ${ZITADEL_POSTGRES_USER}
+        Password: ${ZITADEL_POSTGRES_PASSWORD}
+      Admin:
+        Username: ${POSTGRES_USER}
+        Password: ${POSTGRES_PASSWORD}
+      SSL:
+        Mode: disable
+  ExternalDomain: ${AUTH_DOMAIN}
+  ExternalSecure: true
+  FirstInstance:
+    Org:
+      Name: ${ZITADEL_ORG_NAME}
+      Domain: ${ZITADEL_ORG_DOMAIN}
+    User:
+      Username: ${ZITADEL_ADMIN_USERNAME}
+      Password: ${ZITADEL_ADMIN_PASSWORD}
+      Email: ${ZITADEL_ADMIN_EMAIL}
+      Firstname: ${ZITADEL_ADMIN_FIRSTNAME}
+      Lastname: ${ZITADEL_ADMIN_LASTNAME}
+  Masterkey: ${ZITADEL_MASTER_KEY}
+
+resources:
+  requests:
+    memory: "512Mi"
+    cpu: "250m"
+  limits:
+    memory: "1Gi"
+    cpu: "500m"
+
+metrics:
+  enabled: true  # Expose Prometheus/OpenTelemetry metrics
+  type: otel
+  
+service:
+  type: ClusterIP
+  ports:
+    http: 8080
+    grpc: 9090
+
+persistence:
+  enabled: true
+  existingClaim: zitadel-storage
+  mountPath: /zitadel
+
+ingress:
+  enabled: true
+  className: public
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-cloudflare
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+  hosts:
+    - host: ${AUTH_DOMAIN}
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: zitadel-tls
+      hosts:
+        - ${AUTH_DOMAIN}
+
+livenessProbe:
+  httpGet:
+    path: /debug/healthz
+    port: http
+  initialDelaySeconds: 30
+  periodSeconds: 10
+
+readinessProbe:
+  httpGet:
+    path: /debug/ready
+    port: http
+  initialDelaySeconds: 5
+  periodSeconds: 5

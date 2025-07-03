@@ -1,0 +1,152 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ntfy
+  namespace: ntfy
+  labels:
+    app: ntfy
+    managed-by: script
+    environment: production
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ntfy
+  template:
+    metadata:
+      labels:
+        app: ntfy
+    spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      initContainers:
+      - name: init-bootstrap
+        image: binwiederhier/ntfy:latest
+        securityContext:
+          runAsUser: 0
+          runAsGroup: 0
+        command:
+        - /bin/sh
+        - -c
+        - |
+          set -e
+          echo "[init-bootstrap] Launching ntfy once to seed DB & dirs..."
+          ntfy serve --config /etc/ntfy/server.yml --listen-http :8080 &
+          PID=$!
+
+          # --- wait until the DB file appears or a timeout ---
+          echo "[init-bootstrap] Waiting for auth database to appear..."
+          for i in $(seq 1 15); do
+              if [ -f /var/lib/ntfy/auth.db ]; then
+                  echo "[init-bootstrap] Found auth.db."
+                  break
+              fi
+              sleep 1
+          done
+
+          if [ ! -f /var/lib/ntfy/auth.db ]; then
+              echo "[init-bootstrap] ERROR: auth.db was not created after 15 seconds."
+              kill -s TERM "$PID"
+              wait "$PID" || true
+              exit 1
+          fi
+
+          echo "[init-bootstrap] Setting permissions on data and cache directories..."
+          chown -R 1000:1000 /var/lib/ntfy
+          chown -R 1000:1000 /var/cache/ntfy
+
+          echo "[init-bootstrap] Shutting ntfy down gracefully..."
+          kill -s TERM "$PID"
+          wait "$PID" || true
+          echo "[init-bootstrap] Done; directories are ready."
+        volumeMounts:
+        - name: config-volume
+          mountPath: /etc/ntfy/server.yml
+          subPath: server.yml
+        - name: cache-volume
+          mountPath: /var/cache/ntfy
+        - name: data-volume
+          mountPath: /var/lib/ntfy
+      - name: init-admin
+        image: binwiederhier/ntfy:latest
+        command:
+        - /bin/sh
+        - -c
+        - |
+          set -e
+          if [ -z "${NTFY_INITIAL_USER}" ]; then
+              echo "[init-admin] ERROR: The NTFY_INITIAL_USER variable is not set. This is likely an issue with the admin secret."
+              exit 1
+          fi
+
+          if ntfy user list | grep -q "^${NTFY_INITIAL_USER} "; then
+              echo "[init-admin] Admin user '${NTFY_INITIAL_USER}' already exists – skipping."
+          else
+              echo "[init-admin] Creating admin user '${NTFY_ADMIN_USER}'..."
+              NTFY_PASSWORD="${NTFY_INITIAL_USER}" \
+              ntfy user add --role=admin "${NTFY_INITIAL_USER}"
+              echo "[init-admin] Done."
+          fi
+        env:
+        - name: NTFY_AUTH_DEFAULT_ACCESS
+          value: deny-all
+        - name: NTFY_ENABLE_LOGIN
+          value: "true"
+        - name: NTFY_ENABLE_SIGNUP
+          value: "false"
+        - name: NTFY_AUTH_FILE
+          value: /var/lib/ntfy/auth.db
+        - name: NTFY_ADMIN_USER
+          valueFrom:
+            secretKeyRef:
+              name: ntfy-admin-secret
+              key: user
+        - name: NTFY_ADMIN_PASS
+          valueFrom:
+            secretKeyRef:
+              name: ntfy-admin-secret
+              key: pass
+        volumeMounts:
+        - name: config-volume
+          mountPath: /etc/ntfy/server.yml
+          subPath: server.yml
+        - name: data-volume
+          mountPath: /var/lib/ntfy
+      containers:
+        - name: ntfy
+          image: binwiederhier/ntfy:latest
+          imagePullPolicy: IfNotPresent
+          command: ["ntfy"]
+          args: ["serve", "--config", "/etc/ntfy/server.yml", "--listen-http", ":8080"]
+          ports:
+            - name: http
+              containerPort: 8080
+            - name: metrics
+              containerPort: 9000
+          volumeMounts:
+            - mountPath: /etc/ntfy/server.yml
+              subPath: server.yml
+              name: config-volume
+            - mountPath: /var/cache/ntfy
+              name: cache-volume
+            - mountPath: /var/lib/ntfy
+              name: data-volume
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+      volumes:
+        - name: config-volume
+          configMap:
+            name: ntfy-server-config
+        - name: cache-volume
+          persistentVolumeClaim:
+            claimName: ntfy-cache-pvc
+        - name: data-volume
+          persistentVolumeClaim:
+            claimName: ntfy-pvc 

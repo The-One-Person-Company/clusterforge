@@ -1,0 +1,24 @@
+# Local environment configuration
+**/.env
+
+# Log files
+*.log
+deployment.log
+
+# Credentials and sensitive configuration
+kubeconfig
+minio-credentials
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Generated Kubernetes configs
+# This is a broad rule. Consider making it more specific if you commit YAML files.
+**/*.yaml
+**/*.yml
+
+TODO
+STATUS
+
+pgsql-init

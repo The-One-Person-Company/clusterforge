@@ -1,0 +1,14 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: velero-ui-cert
+  namespace: velero
+spec:
+  secretName: velero-ui-tls
+  issuerRef:
+    name: letsencrypt-cloudflare
+    kind: ClusterIssuer
+  dnsNames:
+    - bkp.theoneperson.company
+  duration: 2160h # 90 days
+  renewBefore: 360h # 15 days 

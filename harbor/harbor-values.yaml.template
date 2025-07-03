@@ -1,0 +1,82 @@
+expose:
+  type: clusterIP
+  tls:
+    auto:
+      commonName: "tls-harbor-secret"
+externalURL: https://${HARBOR_SUBDOMAIN}.${DOMAIN_BASE}
+
+persistence:
+  enabled: true
+  resourcePolicy: "keep"
+  persistentVolumeClaim:
+    registry:
+      existingClaim: "harbor-storage"
+    trivy:
+      existingClaim: "harbor-trivy-pvc"
+      storageClass: ""
+      subPath: ""
+      accessMode: ReadWriteOnce
+      size: 5Gi
+      annotations: {}
+  imageChartStorage:
+    type: filesystem
+  chartmuseum:
+    existingClaim: harbor-pvc
+  jobservice:
+    existingClaim: harbor-pvc
+
+harborAdminPassword: "${HARBOR_ADMIN_PASSWORD}"
+
+cache:
+  enabled: true
+  expireHours: 24
+
+registry:
+  credentials:
+    username: "${HARBOR_ADMIN}"
+    password: "${HARBOR_ADMIN_PASSWORD}"
+
+trivy:
+  enabled: true
+  gitHubToken: "${HARBOR_GIT_TOKEN}"
+
+database:
+  type: external
+  external:
+    host: "${HARBOR_DATABASE_HOST}"
+    port: "${HARBOR_DATABASE_PORT}"
+    username: "${HARBOR_DATABASE_USER}"
+    password: "${HARBOR_DATABASE_PASSWORD}"
+    coreDatabase: "${HARBOR_DATABASE_NAME}"
+
+redis:
+  type: external
+  external:
+    addr: "${HARBOR_REDIS_HOST}:$HARBOR_REDIS_PORT"
+    password: "${HARBOR_REDIS_PASSWORD}"
+
+expose:
+  type: ingress
+  tls:
+    enabled: true
+    secretName: harbor-tls
+  ingress:
+    hosts:
+      core: ${HARBOR_SUBDOMAIN}.${DOMAIN_BASE}
+      registry: ${HARBOR_REGISTRY_SUBDOMAIN}.${DOMAIN_BASE}
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-cloudflare
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+      nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+      nginx.ingress.kubernetes.io/proxy-body-size: "0"
+      nginx.ingress.kubernetes.io/proxy-connect-timeout: "30"
+      nginx.ingress.kubernetes.io/proxy-read-timeout: "1800"
+      nginx.ingress.kubernetes.io/proxy-send-timeout: "1800"
+      nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
+      nginx.ingress.kubernetes.io/proxy-buffers-number: "4"
+      nginx.ingress.kubernetes.io/configuration-snippet: |
+        proxy_set_header X-Forwarded-Proto __SCHEME__;
+        proxy_set_header X-Forwarded-Host __HOST__;
+        more_set_headers "X-Frame-Options: DENY";
+        more_set_headers "X-Content-Type-Options: nosniff";

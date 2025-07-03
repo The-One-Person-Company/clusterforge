@@ -1,0 +1,22 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: harbor-certificate
+  namespace: harbor
+  labels:
+    app: harbor
+    managed-by: script
+spec:
+  secretName: harbor-tls
+  issuerRef:
+    name: letsencrypt-cloudflare
+    kind: ClusterIssuer
+  dnsNames:
+    - ${HARBOR_SUBDOMAIN}.${DOMAIN_BASE}
+    - ${HARBOR_REGISTRY_SUBDOMAIN}.${DOMAIN_BASE} 
+  subject:
+    organizations:
+      - "Omnibookr"
+  commonName: ${HARBOR_SUBDOMAIN}.${DOMAIN_BASE} 
+  duration: 2160h # 90 days
+  renewBefore: 360h # 15 days 

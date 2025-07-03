@@ -1,0 +1,26 @@
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-pvc
+  namespace: database
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: ${POSTGRES_STORAGE_CLASS:-microk8s-hostpath}
+  resources:
+    requests:
+      storage: ${POSTGRES_STORAGE_SIZE:-10Gi}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: redis-pvc
+  namespace: database
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: ${REDIS_STORAGE_CLASS:-microk8s-hostpath}
+  resources:
+    requests:
+      storage: ${REDIS_STORAGE_SIZE:-5Gi}

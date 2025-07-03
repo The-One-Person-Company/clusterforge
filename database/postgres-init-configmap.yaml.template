@@ -1,0 +1,50 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init-script
+  labels:
+    app: postgres
+    managed-by: script
+    environment: production
+data:
+  init.sql: |
+    -- Create database
+    CREATE DATABASE zitadel;
+    
+    -- Connect to the new database
+    \c zitadel;
+    
+    -- Create users and grant privileges
+    DO $$
+    BEGIN
+      IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '${ZITADEL_POSTGRES_USER}') THEN
+        CREATE USER ${ZITADEL_POSTGRES_USER} WITH PASSWORD '${ZITADEL_POSTGRES_PASSWORD}';
+      END IF;
+      
+      IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '${ZITADEL_POSTGRES_NON_ROOT_USER}') THEN
+        CREATE USER ${ZITADEL_POSTGRES_NON_ROOT_USER} WITH PASSWORD '${ZITADEL_POSTGRES_NON_ROOT_PASSWORD}';
+      END IF;
+    END
+    $$;
+    
+    -- Grant privileges
+    GRANT ALL PRIVILEGES ON DATABASE zitadel TO ${ZITADEL_POSTGRES_USER};
+    GRANT ALL PRIVILEGES ON DATABASE zitadel TO ${ZITADEL_POSTGRES_NON_ROOT_USER};
+    
+    -- Grant schema privileges
+    GRANT ALL ON SCHEMA public TO ${ZITADEL_POSTGRES_USER};
+    GRANT ALL ON SCHEMA public TO ${ZITADEL_POSTGRES_NON_ROOT_USER};
+    
+    -- Grant table privileges
+    GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO ${ZITADEL_POSTGRES_USER};
+    GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO ${ZITADEL_POSTGRES_NON_ROOT_USER};
+    
+    -- Grant sequence privileges
+    GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO ${ZITADEL_POSTGRES_USER};
+    GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO ${ZITADEL_POSTGRES_NON_ROOT_USER};
+    
+    -- Set default privileges for future objects
+    ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO ${ZITADEL_POSTGRES_USER};
+    ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO ${ZITADEL_POSTGRES_NON_ROOT_USER};
+    ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO ${ZITADEL_POSTGRES_USER};
+    ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO ${ZITADEL_POSTGRES_NON_ROOT_USER};

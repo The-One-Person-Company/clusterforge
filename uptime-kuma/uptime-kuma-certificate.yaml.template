@@ -1,0 +1,25 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: uptime-kuma-tls
+  namespace: uptime-kuma
+  labels:
+    app: uptime-kuma
+    managed-by: script
+    environment: production
+spec:
+  secretName: uptime-kuma-tls
+  duration: 2160h # 90d
+  renewBefore: 360h # 15d
+  subject:
+    organizations:
+      - Vivien Roggero LLC
+  commonName: ${UPTIME_KUMA_DOMAIN}
+  dnsNames:
+    - ${UPTIME_KUMA_DOMAIN}
+  issuerRef:
+    name: letsencrypt-cloudflare
+    kind: ClusterIssuer
+  privateKey:
+    algorithm: ECDSA
+    size: 256 

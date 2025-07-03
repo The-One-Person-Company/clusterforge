@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: rabbitmq-pvc
+  namespace: database
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: ${RABBITMQ_STORAGE_CLASS}
+  resources:
+    requests:
+        storage: ${RABBITMQ_STORAGE_SIZE}

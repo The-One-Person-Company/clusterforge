@@ -1,0 +1,28 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: rustdesk-ingress
+  namespace: rustdesk
+  labels:
+    app: rustdesk
+    managed-by: script
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-cloudflare
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+spec:
+  ingressClassName: public
+  tls:
+    - hosts:
+        - ${RUSTDESK_SUBDOMAIN}.${DOMAIN_BASE}
+      secretName: rustdesk-tls
+  rules:
+    - host: ${RUSTDESK_SUBDOMAIN}.${DOMAIN_BASE}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: rustdesk-web-service
+                port:
+                  number: 80 

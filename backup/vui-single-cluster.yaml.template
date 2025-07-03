@@ -1,0 +1,32 @@
+global:
+  veleroNamespace: velero
+  clusterName: theoneperson-company-ks1
+
+apiService:
+  secret:
+    defaultAdminUsername: ${TRAEFIK_USERNAME}
+    defaultAdminPassword: ${TRAEFIK_PASSWORD}
+  config:
+    origins:
+      - https://bkp.theoneperson.company
+
+exposure:
+  mode: ingress
+  ingress:
+    spec:
+      ingressClassName: public
+      tls:
+        - hosts:
+            - bkp.theoneperson.company
+          secretName: velero-ui-tls
+      rules:
+        - host: bkp.theoneperson.company
+          http:
+            paths:
+              - path: /
+                pathType: Prefix
+                backend:
+                  service:
+                    name: vui-ui
+                    port:
+                      number: 80
